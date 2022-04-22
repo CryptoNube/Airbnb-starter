@@ -31,6 +31,7 @@ const Home = () => {
           <ConnectButton />
         </div>
       </div>
+
       <div className="tabContent">
         <div className="searchFields">
           <div className="inputs">
@@ -74,7 +75,7 @@ const Home = () => {
               onChange={(event) => setCheckOut(event.date)}
             />
           </div>
-          <div className="vl" />
+          <div className="vl"/>
           <div className="inputs">
             Guests
             <Input
@@ -96,6 +97,7 @@ const Home = () => {
           </Link>
         </div>
       </div>
+
       <div className="randomLocation">
         <div className="title">Feel Adventurous</div>
         <div className="text">
