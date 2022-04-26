@@ -3,18 +3,47 @@ import "./Rentals.css";
 import { Link } from "react-router-dom";
 import {useLocation} from "react-router";
 import logo from "../images/airbnbRed.png";
-import {ConnectButton, Icon, Button} from "web3uikit";
+import {ConnectButton, Icon, Button, useNotification} from "web3uikit";
 import RentalsMap from "../components/RentalsMap";
 import {useState, useEffect} from "react";
 import {useMoralis, useWeb3ExecuteFunction} from "react-moralis";
+import User from "../components/User"
 
 const Rentals = () => {
-
   const {state: searchFilters} = useLocation();
   const [highLight, setHighLight] = useState();
   const [rentalsList, setRentalsList] = useState();
-  const [coOrdinates, setCoOrdinates] = useState();
-  const {Moralis} = useMoralis();
+  const [coOrdinates, setCoOrdinates] = useState([]);
+  const {Moralis, account} = useMoralis();
+  const contractProcessor = useWeb3ExecuteFunction();
+  const dispatch = useNotification();
+
+  const handleSuccess = () => {
+    dispatch({
+      type: "success",
+      message: `Nice! You are going to ${searchFilters.destination}!!`,
+      title: "Booking Successful",
+      position: "topL",
+    });
+  };
+
+  const handleError = (msg) => {
+    dispatch({
+      type: "error",
+      message: `${msg}`,
+      title: "Booking failed",
+      position: "topL",
+    });
+  };
+
+  const handleNoAccount = () => {
+    dispatch({
+      type: "error",
+      message: `Connect your wallet to book a rental`,
+      title: "Not Connected",
+      position: "topL",
+    });
+  };
 
   useEffect(() => {
     async function fetchRentalsList() {
@@ -33,11 +62,59 @@ const Rentals = () => {
       setCoOrdinates(cords);
       setRentalsList(result);
     }
-
-
     fetchRentalsList();
   }, [searchFilters]);
 
+  const bookRental = async function (start, end, id, dayPrice) {
+
+    for (
+      var arr = [], dt = new Date(start);
+      dt <= end;
+      dt.setDate(dt.getDate() + 1)
+    ) {
+      arr.push(new Date(dt).toISOString().slice(0, 10)); //yyyy-mm-dd
+    }
+
+    let options = {
+      contractAddress: "0x27f3F4f633Cf14c51946e976e5F96431Fb2E549f",
+      functionName: "addDatesBooked",
+      abi: [
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "id",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string[]",
+              "name": "newBookings",
+              "type": "string[]"
+            }
+          ],
+          "name": "addDatesBooked",
+          "outputs": [],
+          "stateMutability": "payable",
+          "type": "function"
+        }
+      ],
+      params: {
+        id: id,
+        newBookings: arr,
+      },
+      msgValue: Moralis.Units.ETH(dayPrice * arr.length),
+    }
+
+    await contractProcessor.fetch({
+      params: options,
+      onSuccess: () => {
+        handleSuccess();
+      },
+      onError: (error) => {
+        handleError(error.data.message)
+      }
+    });
+  }
 
   return (
     <>
@@ -70,6 +147,9 @@ const Rentals = () => {
         </div>
         </div>
         <div className="lrContainers">
+        {account &&
+        <User account={account}/>
+        }
         <ConnectButton />
         </div>
       </div>
@@ -94,6 +174,17 @@ const Rentals = () => {
                     </div>
                     <div className="bottomButton">
                       <Button
+                      onClick={()=>{
+                        if(account){
+                          bookRental(
+                            searchFilters.checkIn,
+                            searchFilters.checkOut,
+                            e.attributes.uid_decimal.value.$numberDecimal,
+                            Number(e.attributes.pricePerDay_decimal.value.$numberDecimal)
+                          )}else{
+                          handleNoAccount()
+                        }
+                      }}
                         text="Stay Here"
                       />
                       <div className="price">
