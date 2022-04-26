@@ -1,7 +1,7 @@
 import React from "react";
 import "./Home.css";
 import { Link } from "react-router-dom";
-import bg from "../images/frontpagebg.png";
+import bg from "../images/frontpagebg6.jpg";
 import logo from "../images/airbnb.png";
 import { ConnectButton, Icon, Select, DatePicker, Input, Button } from "web3uikit";
 import { useState } from "react";
